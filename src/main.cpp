@@ -4,6 +4,7 @@ const uint8_t ledPins[] = {2, 3, 4, 5, 6};
 const uint8_t photoTransistorPins[] = {A0, A1, A2, A3, A4};
 const size_t encoderBitCount = sizeof(ledPins) / sizeof(ledPins[0]);
 
+int encoder_readings[] = {0, 0, 0, 0, 0};
 int encoder_bits[] = {0, 0, 0, 0, 0};
 int encoder_value = 0;
 float angle = 0.0;
@@ -22,7 +23,7 @@ void loop() {
   // Read the state of the photo transistors and store them in the encoder_bits
   // array
   for (size_t i = 0; i < encoderBitCount; i++) {
-    encoder_bits[i] = digitalRead(photoTransistorPins[i]);
+    encoder_readings[i] = analogRead(photoTransistorPins[i]);
   }
 
   // Reset encoder_value and angle before calculating the new values
@@ -32,6 +33,7 @@ void loop() {
   // Calculate the encoder value based on the bits read from the photo
   // transistors.
   for (size_t i = 0; i < encoderBitCount; ++i) {
+    encoder_bits[i] = encoder_readings[i] > 200 ? 1 : 0;
     encoder_value = (encoder_value << 1) | encoder_bits[i];
   }
 
