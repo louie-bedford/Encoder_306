@@ -1,7 +1,7 @@
 #include <Arduino.h>
 
 #include "BuiltinEncoder.h"
-#include "Config.h"
+#include "config.h"
 
 void BuiltinEncoder::begin()
 {

@@ -1,55 +1,54 @@
-#include "config.h"
-#include "MotorDrive.h"
-#include "BuiltinEncoder.h"
-#include "PIController.h"
+#include <Arduino.h>
 
+#include "BuiltinEncoder.h"
+#include "MotorDriver.h"
+#include "PIController.h"
+#include "config.h"
+#include "Sensor.h"
+
+
+// =====================================================================
+// Global objects
+// =====================================================================
 
 MotorDriver motor;
 BuiltinEncoder builtinEncoder;
-
-PIController speedController(
-    cfg::KP,
-    cfg::KI
-);
+Sensor sensor;
 
 
-// -------------------------------------------------
-// BaseCodeOne variables
-// -------------------------------------------------
 
-int commandedRPM = 0;
+// =====================================================================
+// BaseCode variables
+// =====================================================================
 
-// Built-in encoder RPM used by PI controller
-float measuredRPM = 0.0f;
+unsigned long lastSensorUpdate = 0;
 
-// PI output
-float controlOutput = 0.0f;
+float deg = 45.0f;
 
 
-// Timing
-unsigned long currentTime = 0;
-unsigned long startTime = 0;
-unsigned long displayStartTime = 0;
+// Keep the original BaseCode behaviour.
+// kp is calculated using the initial deg = 45 before setup().
+float kp = 0.6f * 90.0f / deg;
+
+PIController controller(kp, cfg::KI);
 
 
-// Equivalent to original repeat variable
-bool displayStartStored = false;
+int t = 0;
+int t0 = 0;
+
+int finish = 0;
+int rep = 1;
 
 
-// Main-loop exit condition
-bool finished = false;
-
-
+// =====================================================================
+// Setup
+// =====================================================================
 
 void setup()
 {
     Serial.begin(cfg::SERIAL_BAUD);
 
-    motor.begin();
-    builtinEncoder.begin();
-
-
-    Serial.println("Enter the desired RPM.");
+    Serial.println("Enter the desired rotation in degree.");
 
 
     while (Serial.available() == 0)
@@ -58,203 +57,85 @@ void setup()
     }
 
 
-    commandedRPM =
-        Serial.readString().toFloat();
+    deg = Serial.readString().toFloat();
 
 
-    // Set motor direction using original sign
-    motor.setDirectionFromRPM(commandedRPM);
+    motor.setDirectionFromDegree(deg);
 
 
-    // Controller always uses positive RPM magnitude
-    commandedRPM = abs(commandedRPM);
+    deg = abs(deg);
 }
 
 
+// =====================================================================
+// Main loop
+// =====================================================================
 
 void loop()
 {
-    currentTime = millis();
+    t = millis();
 
-    startTime = currentTime;
+    t0 = t;
 
 
-    // -------------------------------------------------
-    // Original BaseCodeOne 15 s run
-    // -------------------------------------------------
-
-    while (
-        (currentTime >= startTime) &&
-        (currentTime <= startTime + cfg::RUN_TIME_MS) &&
-        !finished
-    )
+    // Run each positioning operation for 4 seconds,
+    // for a maximum of 10 repetitions.
+    while (t < t0 + cfg::POSITION_TIME_MS &&
+           rep <= cfg::MAX_REPETITIONS)
     {
 
-        // =============================================
-        // 1. PI CONTROLLER
-        // =============================================
+        if (t - lastSensorUpdate >= 10){
+            lastSensorUpdate = t;
 
-        if (
-            speedController.update(
-                currentTime,
-                commandedRPM,
-                measuredRPM,
-                controlOutput
-            )
-        )
-        {
-            motor.setPWM(controlOutput);
-        }
+            sensor.update();
 
+            const float* values = sensor.getValue();
 
+            Serial.print("[");
 
-        // =============================================
-        // 2. BUILT-IN ENCODER COUNTS
-        // =============================================
-
-        builtinEncoder.updateCounts();
-
-
-
-        // =============================================
-        // 3. TIMING / DISPLAY
-        // =============================================
-
-        currentTime = millis();
-
-
-        if (
-            (currentTime % cfg::SPEED_SAMPLE_MS <= 1) &&
-            !displayStartStored
-        )
-        {
-            displayStartTime = currentTime;
-            displayStartStored = true;
-        }
-
-
-        // -------------------------------------------------
-        // 100 ms built-in encoder RPM
-        // -------------------------------------------------
-
-        if (currentTime % cfg::SPEED_SAMPLE_MS == 0)
-        {
-            Serial.print("time in ms: ");
-            Serial.print(
-                currentTime - displayStartTime
-            );
-
-
-            Serial.print(
-                "  spontaneous speed from builtin encoder:  "
-            );
-
-
-            measuredRPM =
-                builtinEncoder.getControllerRPMAndReset();
-
-
-            Serial.println(measuredRPM);
-
-
-
-            // =============================================
-            // 4. 5 SECOND DISPLAY
-            // =============================================
-
-            if (
-                (currentTime - displayStartTime)
-                % cfg::DISPLAY_PERIOD_MS
-                == 0
-            )
+            for (int i = 0; i <6; i++)
             {
-                float builtinDisplayRPM =
-                    builtinEncoder.getDisplayRPM();
+                Serial.print(static_cast<int>(values[i]));
 
-
-                Serial.println();
-
-
-                Serial.print(
-                    "RPM from builtin encoder: "
-                );
-
-                Serial.println(
-                    builtinDisplayRPM
-                );
-
-
-                // =========================================
-                // TODO:
-                // Our optical quadrature encoder
-                // =========================================
-
-                float opticalEncoderRPM = 0.0f;
-
-
-                Serial.print(
-                    "RPM from optical quadrature encoder: "
-                );
-
-                Serial.println(
-                    opticalEncoderRPM
-                );
-
-
-                // Project definition:
-                // optical encoder - built-in encoder
-
-                float error =
-                    opticalEncoderRPM
-                    - builtinDisplayRPM;
-
-
-                Serial.print("Error: ");
-                Serial.println(error);
-
-
-
-                // =========================================
-                // BUILT-IN ENCODER DIRECTION
-                // =========================================
-
-                Serial.print(
-                    "direction read by motor's sensor: "
-                );
-
-
-                if (
-                    builtinEncoder.getDirection() == 0
-                )
+                if (i < 5)
                 {
-                    Serial.print("CW");
+                    Serial.print(", ");
                 }
-                else
-                {
-                    Serial.print("CCW");
-                }
+            }
+
+            Serial.println("]");
+        }
+
+        // Run the PI controller every 10 ms.
+        if (t % 10 == 0)
+        {
+            const float counts =
+                builtinEncoder.getCounts();
+
+            const float targetCounts =
+                deg * cfg::ENCODER_COUNTS_PER_REV / 360.0f;
+
+                
+            if (counts < targetCounts)
+            {
+                const float currentDegree =
+                    builtinEncoder.getAngleDegrees();
+
+                const float pwm =
+                    controller.update(
+                        deg,
+                        currentDegree
+                    );
+
+                motor.setPWM(pwm);
+            }
 
 
-                Serial.print("  ,   ");
+            if (counts >= targetCounts)
+            {
+                motor.stop();
 
-
-
-                // =========================================
-                // TODO:
-                // Optical encoder direction
-                // =========================================
-
-                Serial.print(
-                    "direction read by sensor:  "
-                );
-
-                Serial.println("");
-
-
-                Serial.println();
-
-
-                builtinEncoder.resetDisplayWindow();
+                controller.resetIntegral();
             }
 
 
@@ -262,29 +143,67 @@ void loop()
         }
 
 
-
-        // =============================================
-        // 5. BUILT-IN ENCODER DIRECTION DETECTION
-        // =============================================
-
-        builtinEncoder.updateDirection();
+        // Read and count the built-in encoder.
+        builtinEncoder.update();
 
 
+        // Update time.
+        t = millis();
 
-        // =============================================
-        // 6. UPDATE TIME
-        // =============================================
-
-        currentTime = millis();
+        finish = 1;
     }
 
 
+    // =================================================================
+    // Display results
+    // =================================================================
 
-    // -------------------------------------------------
-    // End of 15-second test
-    // -------------------------------------------------
+    if (finish == 1)
+    {
+        delay(500);
+
+        rep = rep + 1;
+
+
+        Serial.print(
+            "shaft possition from optical absolute sensor from home position: "
+        );
+
+        Serial.println(0);
+
+
+        Serial.print(
+            "shaft displacement from optical absolute sensor: "
+        );
+
+        Serial.println(0);
+
+
+        Serial.print(
+            "Shaft displacement from motor's builtin encoder: "
+        );
+
+        const float builtinAngle =
+            builtinEncoder.getAngleDegrees();
+
+        Serial.println(builtinAngle);
+
+
+        const float Error =
+            0 - builtinAngle;
+
+        Serial.print("Error :");
+
+        Serial.println(Error);
+
+        Serial.println();
+
+
+        builtinEncoder.reset();
+
+        finish = 0;
+    }
+
 
     motor.stop();
-
-    finished = true;
-}
+} 

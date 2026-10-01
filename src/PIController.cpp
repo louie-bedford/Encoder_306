@@ -1,5 +1,5 @@
 #include "PIController.h"
-#include "Config.h"
+
 
 PIController::PIController(float kp, float ki)
     : kp_(kp),
@@ -8,45 +8,17 @@ PIController::PIController(float kp, float ki)
 }
 
 
-bool PIController::update(
-    unsigned long currentTime,
-    float targetRPM,
-    float measuredRPM,
-    float& controlOutput
-)
+float PIController::update(float targetDegree, float currentDegree)
 {
-    // Original:
-    //
-    // if (b % 13 == 0 && repc == 1)
+    const float error = targetDegree - currentDegree;
 
-    if ((currentTime % cfg::PI_PERIOD_MS == 0) &&
-        (repeatCondition_ == 1))
-    {
-        const float error =
-            targetRPM - measuredRPM;
+    integral_ = integral_ + error;
 
-        integralError_ =
-            ki_ * error
-            + integralError_;
+    return kp_ * error + ki_ * integral_;
+}
 
-        controlOutput =
-            cfg::BASE_PWM
-            + kp_ * error
-            + integralError_;
 
-        repeatCondition_ = 0;
-
-        return true;
-    }
-
-    // Original:
-    //
-    // if (b % 13 == 1)
-    //
-    if (currentTime % cfg::PI_PERIOD_MS == 1)
-    {
-        repeatCondition_ = 1;
-    }
-
-    return false;
+void PIController::resetIntegral()
+{
+    integral_ = 0.0f;
 }
