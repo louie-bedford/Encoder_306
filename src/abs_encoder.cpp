@@ -1,11 +1,12 @@
-#include <Arduino.h>
 #include "abs_encoder.h"
+
+#include <Arduino.h>
 
 namespace {
 const uint8_t ledPins[] = {2, 3, 4, 5, 6};
 const uint8_t photoTransistorPins[] = {A0, A1, A2, A3, A4};
 const size_t encoderBitCount = 5;
-const int signalThreshold = 350;
+const int signalThreshold = 180;
 
 int encoderReadings[encoderBitCount] = {0};
 int encoderBits[encoderBitCount] = {0};
