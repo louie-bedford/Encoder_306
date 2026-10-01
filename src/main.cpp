@@ -1,13 +1,18 @@
 #include <Arduino.h>
-#include "encoder.h"
+#include "abs_encoder.h"
 
 #define BAUD_RATE 11520
+#define MODE 0 // 0 for absolute mode, 1 for quadrature mode
 
 void setup() {
   Serial.begin(BAUD_RATE);
-  encoderSetup();
+  if (MODE == 0) {
+    absEncoderSetup();
+  }
 }
 
 void loop() {
-  encoderLoop();
+  if (MODE == 0) {
+    absEncoderLoop();
+  }
 }

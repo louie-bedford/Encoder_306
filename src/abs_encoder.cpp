@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "encoder.h"
+#include "abs_encoder.h"
 
 namespace {
 const uint8_t ledPins[] = {2, 3, 4, 5, 6};
@@ -13,7 +13,7 @@ int encoderValue = 0;
 float angle = 0.0;
 }  // namespace
 
-void encoderSetup() {
+void absEncoderSetup() {
   for (size_t bit = 0; bit < encoderBitCount; ++bit) {
     pinMode(ledPins[bit], OUTPUT);
     digitalWrite(ledPins[bit], HIGH);
@@ -21,7 +21,7 @@ void encoderSetup() {
   }
 }
 
-void encoderLoop() {
+void absEncoderLoop() {
   for (size_t i = 0; i < encoderBitCount; ++i) {
     encoderReadings[i] = analogRead(photoTransistorPins[i]);
   }
