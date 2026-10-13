@@ -1,10 +1,14 @@
-#include <Arduino.h>
+// TEST MADE WITH AI
+
 #include "quadrature_encoder.h"
+
+#include <Arduino.h>
 
 namespace {
 const uint8_t channelAPin = 2;
 const uint8_t channelBPin = 3;
-const uint16_t pulsesPerRevolution = 20;  // Update to match your encoder disk/slots.
+const uint16_t pulsesPerRevolution =
+    20;  // Update to match your encoder disk/slots.
 
 volatile unsigned long lastEdgeMicros = 0;
 volatile unsigned long lastPeriodMicros = 0;
@@ -38,13 +42,9 @@ void handleQuadratureInterrupt(uint8_t channel) {
   lastEdgeMicros = nowMicros;
 }
 
-void handleChannelA() {
-  handleQuadratureInterrupt(0);
-}
+void handleChannelA() { handleQuadratureInterrupt(0); }
 
-void handleChannelB() {
-  handleQuadratureInterrupt(1);
-}
+void handleChannelB() { handleQuadratureInterrupt(1); }
 }  // namespace
 
 void quadratureEncoderSetup() {
@@ -80,10 +80,6 @@ void quadratureEncoderLoop() {
   }
 }
 
-float quadratureEncoderGetRpm() {
-  return rpm;
-}
+float quadratureEncoderGetRpm() { return rpm; }
 
-int8_t quadratureEncoderGetDirection() {
-  return direction;
-}
+int8_t quadratureEncoderGetDirection() { return direction; }

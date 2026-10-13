@@ -3,7 +3,6 @@
 #include <Arduino.h>
 
 namespace {
-const uint8_t ledPins[] = {2, 3, 4, 5, 6};
 const uint8_t photoTransistorPins[] = {A0, A1, A2, A3, A4};
 const size_t encoderBitCount = 5;
 const int signalThreshold = 180;
@@ -16,8 +15,6 @@ float angle = 0.0;
 
 void absEncoderSetup() {
   for (size_t bit = 0; bit < encoderBitCount; ++bit) {
-    pinMode(ledPins[bit], OUTPUT);
-    digitalWrite(ledPins[bit], HIGH);
     pinMode(photoTransistorPins[bit], INPUT);
   }
 }
