@@ -12,12 +12,12 @@ namespace cfg
     constexpr uint8_t ENCODER_A_PIN = 7;
     constexpr uint8_t ENCODER_B_PIN = 8;
 
-    constexpr uint8_t IR_1 = A4;
-    constexpr uint8_t IR_2 = A3;
-    constexpr uint8_t IR_3 = A2;
-    constexpr uint8_t IR_4 = A1;
-    constexpr uint8_t IR_5 = A0;
-    constexpr uint8_t IR_6 = A5;
+    constexpr uint8_t IR_1 = A4; //1.2V 245.76
+    constexpr uint8_t IR_2 = A3; //1.5V 307.2
+    constexpr uint8_t IR_3 = A2; //1.3V 266.24
+    constexpr uint8_t IR_4 = A1; //1.1V 225.28
+    constexpr uint8_t IR_5 = A0; //1.2V 245.76
+    constexpr uint8_t IR_6 = A5; //1.4V 286.72
 
     constexpr float ENCODER_COUNTS_PER_REV = 228.0f;
     constexpr float IR_COUNTS_PER_REV = 64.0f;
@@ -26,5 +26,5 @@ namespace cfg
 
     constexpr int MAX_REPETITIONS = 10;
 
-    constexpr float KI = 0.02f;
+    constexpr float KI = 0.25f;
 }

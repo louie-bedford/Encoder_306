@@ -8,6 +8,8 @@ public:
 
     float getcurrentRPM(float elasped) const;
 
+    float getcurrentRPM_rolling(float elasped) const;
+
     int getCounts() const;
 
     int gettotal() const;

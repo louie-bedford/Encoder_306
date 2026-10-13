@@ -5,8 +5,8 @@ class PIController
 public:
     PIController(float kp, float ki);
 
-    float update(float targetRPM, float currentRPM, float dt);
-
+    float update(float targetRPM, float currentRPM,
+                           float elapsedMs);
     void resetIntegral();
 
 private:

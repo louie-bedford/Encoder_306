@@ -6,8 +6,8 @@
 
 void Quad::update()
 {
-    IR1 = (analogRead(cfg::IR_5) > 300) ? 1.0f : 0.0f;
-    IR2 = (analogRead(cfg::IR_6) > 300) ? 1.0f : 0.0f;
+    IR1 = (analogRead(cfg::IR_5) > 280) ? 1.0f : 0.0f;
+    IR2 = (analogRead(cfg::IR_6) > 280) ? 1.0f : 0.0f;
 
     if (IR1 != IR2  && state_ == 0)
     {
@@ -36,8 +36,7 @@ void Quad::update()
             direction_ = -1;  // CCW
         }
 
-        counts_++;
-        totalcounts_++;
+
     }
 
 
@@ -53,8 +52,7 @@ void Quad::update()
             direction_ = 1;   // CW
         }
 
-        counts_++;
-        totalcounts_++;
+
     }
 
 
