@@ -40,10 +40,10 @@ void setup()
 
     // CSV header for LPF waveform comparison.
     // Raw and filtered IR signals will be plotted together in MATLAB.
-    Serial.println(
+    /*Serial.println(
         "time_ms,rawA,filtA,rawB,filtB,"
         "builtinRPM,irRPM100,irRPM500,pwm"
-    );
+    );*/
 }
 
 
@@ -60,8 +60,8 @@ void loop()
      * The quadrature decoder currently still uses the raw signal.
      * The filtered signal is only recorded for comparison.
      */
-    Encoder.update();
-    IRQuad.update();
+    Encoder.update(now);
+    IRQuad.update(now);
 
 
     time_variant = now - lastSensorUpdate;
@@ -76,7 +76,7 @@ void loop()
      * CSV format:
      * time_ms, rawA, filtA, rawB, filtB
      */
-    if (now - lastCSV >= 2)
+    /*if (now - lastCSV >= 2)
     {
         lastCSV = now;
 
@@ -100,7 +100,7 @@ void loop()
 
         // End each row as a MATLAB matrix row
         Serial.println(";");
-    }
+    }*/
 
 
     /*
@@ -119,7 +119,7 @@ void loop()
          * during the LPF test to avoid unnecessary Serial traffic.
          */
 
-        /*
+        
         sensor.update();
 
         const float* values = sensor.getValue();
@@ -137,7 +137,7 @@ void loop()
         }
 
         Serial.println("]");
-        */
+        
 
 
         /*
@@ -147,7 +147,7 @@ void loop()
 
         int direction = IRQuad.getDirection();
 
-        /*
+        
         if (direction == 1)
         {
             Serial.println("CW");
@@ -156,7 +156,7 @@ void loop()
         {
             Serial.println("CCW");
         }
-        */
+        
 
 
         // Built-in encoder RPM over the current 100 ms window.
@@ -189,7 +189,7 @@ void loop()
         Motor.setPWM(0);
         PIcontroller.resetIntegral();
 
-        /*
+        
         Encoder.getCounts();
 
         Serial.println("-------------------------");
@@ -208,7 +208,7 @@ void loop()
             (cfg::IR_COUNTS_PER_REV * now);
 
         Serial.println(RPMF);
-        */
+        
 
         // Hold the program after the test.
         delay(100000);

@@ -11,28 +11,24 @@ PIController::PIController(float kp, float ki)
 
 
 float PIController::update(float targetRPM, float currentRPM,
-                           float elapsedMs)
+                           float elapsed)
 {
-    if (elapsedMs <= 0.0f)
+    if (elapsed <= 0.0f)
         return 0.0f;
 
-    const float dt = elapsedMs / 1000.0f;
-    const float error = targetRPM - currentRPM;
+    float dt = elapsed / 1000.0f;
 
-    const float candidateIntegral = integral_ + error * dt;
-    const float candidateOutput =
-        kp_ * error + ki_ * candidateIntegral;
+    float error = targetRPM - currentRPM;
 
-    // Prevent the integral from pushing farther into saturation.
-    const bool saturatingHigh =
-        candidateOutput > 255.0f && error > 0.0f;
-    const bool saturatingLow =
-        candidateOutput < 0.0f && error < 0.0f;
+    float integral_temp = integral_ + error * dt;
+    
+    float output_temp = kp_ * error + ki_ * integral_temp;
 
-    if (!saturatingHigh && !saturatingLow)
-        integral_ = candidateIntegral;
+    if (!(output_temp > 255.0f && error > 0.0f) && !(output_temp < 0.0f && error < 0.0f))
+        integral_ = integral_temp;
 
-    const float output = kp_ * error + ki_ * integral_;
+    float output = kp_ * error + ki_ * integral_;
+
     return constrain(output, 0.0f, 255.0f);
 }
 

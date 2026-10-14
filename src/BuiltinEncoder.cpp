@@ -4,7 +4,7 @@
 #include "config.h"
 
 
-void BuiltinEncoder::update()
+void BuiltinEncoder::update(float now)
 {
     channel1_ = digitalRead(cfg::ENCODER_A_PIN);
     channel2_ = digitalRead(cfg::ENCODER_B_PIN);
@@ -13,7 +13,9 @@ void BuiltinEncoder::update()
     if (channel1_ != channel2_ && state_ == 0)
     {
         counts_ = counts_ + 1;
-        totalcount_ +=1;
+        if(now > 5000){
+            totalcount_+=1;
+        }
         state_ = 1;
     }
 
@@ -21,8 +23,9 @@ void BuiltinEncoder::update()
     if (channel1_ == channel2_ && state_ == 1)
     {
         counts_ = counts_ + 1;
-        totalcount_+=1;
-
+        if(now > 5000){
+            totalcount_+=1;
+        }
         state_ = 0;
     }
 }

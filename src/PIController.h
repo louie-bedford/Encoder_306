@@ -6,7 +6,7 @@ public:
     PIController(float kp, float ki);
 
     float update(float targetRPM, float currentRPM,
-                           float elapsedMs);
+                           float elapsed);
     void resetIntegral();
 
 private:

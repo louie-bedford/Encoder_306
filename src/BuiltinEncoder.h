@@ -3,7 +3,7 @@
 class BuiltinEncoder
 {
 public:
-    void update();
+    void update(float now);
 
     float getCounts() const;
 
