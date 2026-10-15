@@ -14,8 +14,6 @@ const int ABS_BITS = 5;          // 5 tracks -> 32 sectors
 const int absThreshold[ABS_BITS] = {
     245, 307, 266, 225,
     245};  // per-channel ADC threshold: set to midpoint of measured min/max
-const bool ABS_USE_GRAY =
-    false;  // true: disk is Gray coded; false: plain binary
 const int ABS_SIGN =
     1;  // +1 if disk angle increases when shaft turns CW, -1 if it decreases
 const float ABS_SECTOR = 360.0 / 32.0;  // 11.25 deg per sector
@@ -25,13 +23,6 @@ float prevAngle =
 int cmdSign = 1;   // [OPT] +1 = CW commanded, -1 = CCW commanded
 float absErr[10];  // [OPT] |error| of each of the 10 positionings
 bool summaryDone = false;  // [OPT] makes sure the final average is printed once
-
-// [OPT] Gray code -> binary
-int grayToBinary(int g) {
-  int b = 0;
-  for (; g; g >>= 1) b ^= g;
-  return b;
-}
 
 // [OPT] Absolute disk angle in degrees [0,360), reported at the sector centre
 float absReadAngle() {
@@ -43,7 +34,6 @@ float absReadAngle() {
     code |= (v > absThreshold[i] ? 1 : 0)
             << i;  // A0 -> bit 0 (LSB), A4 -> bit 4 (MSB)
   }
-  if (ABS_USE_GRAY) code = grayToBinary(code);
   return code * ABS_SECTOR + ABS_SECTOR / 2.0;
 }
 
@@ -88,7 +78,7 @@ void setup() {
   if (deg < 0) {
     analogWrite(3, 255);  // change the direction of rotation by applying
                           // voltage to pin 3 of arduino
-    cmdSign = -1;  // [OPT] remember commanded direction (CCW)
+    cmdSign = -1;         // [OPT] remember commanded direction (CCW)
   }
   deg = abs(deg);
 
@@ -130,94 +120,4 @@ void loop() {
     if (sm1 != sm2 && r == 0) {  // counting the number changes for both chanels
       s = s + 1;
       r = 1;  // this indicator wont let this condition, (sm1 != sm2), to be
-              // counted until the next condition, (sm1 == sm2), happens
-    }
-    if (sm1 == sm2 && r == 1) {
-      s = s + 1;
-      r = 0;  // this indicator wont let this condition, (sm1 == sm2), to be
-              // counted until the next condition, (sm1 != sm2), happens
-    }
-
-    t = millis();  // updating time
-    finish = 1;    // cghanging finish indicator
-  }
-
-  if (finish == 1) {  // this part of the code is for displaying the result
-    // [OPT] Read the optical encoder first, at the same instant the built-in
-    // count stopped. (Done only here, never inside the 4 s loop, so the ADC
-    // does not disturb the encoder polling.)
-    float pos = absReadAngle();  // absolute angle from the disk's home mark
-
-    delay(500);         // half second delay
-    int idx = rep - 1;  // [OPT] index of this positioning (0..9)
-    rep = rep + 1;      // increasing the repetition indicator
-
-    float dOpt =
-        ABS_SIGN *
-        angleDiff(
-            pos,
-            prevAngle);  // [OPT] signed optical displacement (+ = CW, - = CCW)
-    float dBuilt =
-        cmdSign * s * 360 /
-        228;  // [OPT] signed built-in displacement; 228 counts per revolution
-    float err = dOpt - dBuilt;  // [OPT] error = yours - built-in
-    prevAngle = pos;            // [OPT] next positioning starts from here
-    absErr[idx] = fabs(err);
-
-    Serial.print("Positioning ");  // [OPT]
-    Serial.println(idx + 1);
-
-    Serial.print("direction commanded: ");  // [OPT]
-    Serial.println(cmdSign > 0 ? "CW" : "CCW");
-
-    Serial.print("direction read by optical sensor: ");  // [OPT]
-    if (dOpt > 0)
-      Serial.println("CW");
-    else if (dOpt < 0)
-      Serial.println("CCW");
-    else
-      Serial.println("none");
-
-    Serial.print(
-        "shaft possition from optical absolute sensor from home position: ");
-    Serial.println(pos);
-
-    Serial.print("shaft displacement from optical absolute sensor: ");
-    Serial.println(dOpt);
-
-    Serial.print("Shaft displacement from motor's builtin encoder: ");
-    Serial.println(
-        dBuilt);  // every full Revolution of the shaft is associated with 228
-                  // counts of builtin encoder so to turn it to degre we can use
-                  // this formula (s * 360 / 228), "s" is the number of built-in
-                  // encoder counts
-    Serial.print("Error :");
-    Serial.println(err);  // displaying error
-    Serial.println();
-    s = 0;
-    finish = 0;
-  }
-
-  // [OPT] After the 10th positioning: average unsigned error of the 8 best
-  // (smallest) of 10
-  if (rep > 10 && !summaryDone) {
-    float sorted[10];
-    for (int i = 0; i < 10; i++) sorted[i] = absErr[i];
-    for (int i = 1; i < 10; i++) {  // insertion sort, ascending
-      float key = sorted[i];
-      int j = i - 1;
-      while (j >= 0 && sorted[j] > key) {
-        sorted[j + 1] = sorted[j];
-        j--;
-      }
-      sorted[j + 1] = key;
-    }
-    float sum = 0;
-    for (int i = 0; i < 8; i++) sum += sorted[i];
-    Serial.print("Average unsigned error, best 8 of 10: ");
-    Serial.println(sum / 8.0);
-    summaryDone = true;
-  }
-
-  analogWrite(6, 0);  // turning off the motor
-}
+              //
