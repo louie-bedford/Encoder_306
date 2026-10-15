@@ -120,4 +120,87 @@ void loop() {
     if (sm1 != sm2 && r == 0) {  // counting the number changes for both chanels
       s = s + 1;
       r = 1;  // this indicator wont let this condition, (sm1 != sm2), to be
-              //
+              // counted until the next condition, (sm1 == sm2), happens
+    }
+    if (sm1 == sm2 && r == 1) {
+      s = s + 1;
+      r = 0;  // this indicator wont let this condition, (sm1 == sm2), to be
+              // counted until the next condition, (sm1 != sm2), happens
+    }
+
+    t = millis();  // updating time
+    finish = 1;    // cghanging finish indicator
+  }
+
+  if (finish == 1) {  // this part of the code is for displaying the result
+    // [OPT] Read the optical encoder first, at the same instant the built-in
+    // count stopped. (Done only here, never inside the 4 s loop, so the ADC
+    // does not disturb the encoder polling.)
+    float pos = absReadAngle();  // absolute angle from the disk's home mark
+
+    delay(500);         // half second delay
+    int idx = rep - 1;  // [OPT] index of this positioning (0..9)
+    rep = rep + 1;      // increasing the repetition indicator
+
+    // [OPT] signed optical movement: + = CW, - = CCW
+    float dSigned = ABS_SIGN * angleDiff(pos, prevAngle);
+    // [OPT] optical displacement along the commanded direction (positive when
+    // the sensor agrees with the command, like the base code's output)
+    float dOpt = cmdSign * dSigned;
+    float dBuilt = s * 360 / 228;  // built-in displacement, same as base code
+    float err = dOpt - dBuilt;     // [OPT] error = yours - built-in
+    prevAngle = pos;               // [OPT] next positioning starts from here
+    absErr[idx] = fabs(err);
+
+    Serial.print(
+        "shaft possition from optical absolute sensor from home position: ");
+    Serial.println(pos);
+
+    Serial.print("shaft displacement from optical absolute sensor: ");
+    Serial.println(dOpt);
+
+    Serial.print("Shaft displacement from motor's builtin encoder: ");
+    Serial.println(dBuilt);  // every full Revolution of the shaft is associated
+                             // with 228 counts of builtin encoder so to turn it
+                             // to degre we can use this formula (s * 360 /
+                             // 228), "s" is the number of built-in encoder
+                             // counts
+
+    Serial.print("Error :");
+    Serial.println(err);  // displaying error
+
+    Serial.print("direction read by optical sensor: ");  // [OPT] CW / CCW
+    if (dSigned > 0)
+      Serial.println("CW");
+    else if (dSigned < 0)
+      Serial.println("CCW");
+    else
+      Serial.println("none");
+    Serial.println();
+    s = 0;
+    finish = 0;
+  }
+
+  // [OPT] After the 10th positioning: average unsigned error of the 8 best
+  // (smallest) of 10
+  if (rep > 10 && !summaryDone) {
+    float sorted[10];
+    for (int i = 0; i < 10; i++) sorted[i] = absErr[i];
+    for (int i = 1; i < 10; i++) {  // insertion sort, ascending
+      float key = sorted[i];
+      int j = i - 1;
+      while (j >= 0 && sorted[j] > key) {
+        sorted[j + 1] = sorted[j];
+        j--;
+      }
+      sorted[j + 1] = key;
+    }
+    float sum = 0;
+    for (int i = 0; i < 8; i++) sum += sorted[i];
+    Serial.print("Average unsigned error, best 8 of 10: ");
+    Serial.println(sum / 8.0);
+    summaryDone = true;
+  }
+
+  analogWrite(6, 0);  // turning off the motor
+}
